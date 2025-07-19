@@ -13,11 +13,6 @@ It supports multiple languages with syntax highlighting, code execution for Pyth
 - ▶️ Run Python code directly from the browser
 - 💾 Simple, clean UI powered by Streamlit
 
----
-
-## 🖥️ Demo Screenshot
-
-*(Add your screenshot here – e.g. from Streamlit UI)*
 
 ---
 
