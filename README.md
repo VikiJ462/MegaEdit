@@ -20,5 +20,11 @@ It supports multiple languages with syntax highlighting, code execution for Pyth
 
 First, install the required Python packages:
 
-```bash
-pip install streamlit streamlit-ace
+`pip install streamlit streamlit-ace`
+
+To open it, run
+
+`streamlit run streamlitt.py`
+
+
+
