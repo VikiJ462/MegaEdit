@@ -2,62 +2,93 @@ import streamlit as st
 from streamlit_ace import st_ace
 import subprocess
 
-# Page configuration
-st.set_page_config(page_title="Code Editor", page_icon="💾", layout="wide")
-
-# Title
-st.title("MegaEdit")
-st.write("Write your code below. You can run Python code or save any code.")
+# Page config
+st.set_page_config(page_title="MegaEdit", page_icon="💾", layout="wide")
+st.title(" MegaEdit")
 
 # Sidebar settings
 with st.sidebar:
-    theme = st.selectbox("🎨 Editor Theme", ["monokai", "github", "solarized_dark", "solarized_light", "dracula"])
+    theme = st.selectbox("🎨 Theme", ["monokai", "github", "solarized_dark", "solarized_light", "dracula"])
     font_size = st.slider("🔠 Font Size", 12, 24, 14)
     show_gutter = st.checkbox("📏 Show Line Numbers", value=True)
-    language = st.selectbox("💬 Language", ["python", "javascript", "c"], index=0)
+    default_language = st.selectbox("💬 Language", ["python", "javascript", "c", "cpp", "h", "hpp", "hp", "md"], index=0)
+    uploaded_file = st.file_uploader("📂 Upload Code File", type=["py", "js", "c", "txt", "cpp", "h", "hpp", "md"])
 
-# Code editor
+# Session state: files = {filename: {code, language}}
+if "files" not in st.session_state:
+    st.session_state.files = {
+        "main.py": {"code": "", "language": "python"}
+    }
+
+# File upload → load into new tab
+if uploaded_file is not None:
+    filename = uploaded_file.name
+    content = uploaded_file.read().decode("utf-8")
+    lang_map = {"py": "python", "js": "javascript", "c": "c", "cpp": "c", "hpp": "c", "h": "c", "md": "javascript", "txt": "javascript"}
+    ext = filename.split(".")[-1].lower()
+    lang = lang_map.get(ext, default_language)
+    st.session_state.files[filename] = {"code": content, "language": lang}
+    st.success(f"✅ Uploaded and added as '{filename}'")
+
+# ➕ Add new file
+with st.expander("➕ Add New File"):
+    new_filename = st.text_input("File name (with extension)", placeholder="e.g. utils.py")
+    if st.button("➕ Create File"):
+        if new_filename and new_filename not in st.session_state.files:
+            ext = new_filename.split(".")[-1].lower()
+            lang_map = {"py": "python", "js": "javascript", "c": "c", "cpp": "c", "hpp": "c", "h": "c", "md": "javascript", "txt": "javascript"}
+            lang = lang_map.get(ext, default_language)
+            st.session_state.files[new_filename] = {"code": "", "language": lang}
+            st.success(f"✅ Created new file: {new_filename}")
+        elif new_filename in st.session_state.files:
+            st.warning("⚠️ File already exists!")
+
+# Show file tabs
+file_tabs = list(st.session_state.files.keys())
+active_file = st.selectbox("📁 Select File to Edit", file_tabs)
+
+# Load code & language
+current_data = st.session_state.files[active_file]
 code = st_ace(
-    language=language,
+    value=current_data["code"],
+    language=current_data["language"],
     theme=theme,
     font_size=font_size,
     show_gutter=show_gutter,
     auto_update=True,
-    key="editor"
+    key=f"editor_{active_file}"
 )
 
-# Run section (Python only)
-if language == "python":
-    st.subheader("▶️ Run Code")
-    if st.button("Run Code"):
-        try:
-            with open("temp_code.py", "w") as f:
-                f.write(code)
+# Update state
+if code is not None:
+    st.session_state.files[active_file]["code"] = code
 
-            result = subprocess.run(["python", "temp_code.py"], capture_output=True, text=True)
+# Run only if Python and main.py
+if active_file.endswith(".py") and st.session_state.files[active_file]["language"] == "python":
+    if active_file == "main.py":
+        st.subheader("▶️ Run main.py")
+        if st.button("Run main.py"):
+            try:
+                with open("temp_main.py", "w") as f:
+                    f.write(code)
+                result = subprocess.run(["python", "temp_main.py"], capture_output=True, text=True)
+                st.subheader("📤 Output:")
+                st.text(result.stdout)
+                if result.stderr:
+                    st.error(result.stderr)
+            except Exception as e:
+                st.error(f"Error: {e}")
+    else:
+        st.info("💡 Only `main.py` can be run.")
 
-            st.subheader("📤 Output:")
-            st.text(result.stdout)
-            if result.stderr:
-                st.error(result.stderr)
-        except Exception as e:
-            st.error(f"Error: {e}")
-
-# Save code as file
-st.subheader("💾 Save Code")
+# Download file
+st.subheader("💾 Download Current File")
 if code:
-    file_extension = {
-        "python": "py",
-        "javascript": "js",
-        "c": "c"
-    }.get(language, "txt")
-
-    filename = f"my_code.{file_extension}"
     st.download_button(
-        label="💾 Download Code File",
+        label=f"💾 Download {active_file}",
         data=code,
-        file_name=filename,
+        file_name=active_file,
         mime="text/plain"
     )
 else:
-    st.info("⏳ Start typing code to enable download.")
+    st.info("Start typing code or upload a file to enable download.")
