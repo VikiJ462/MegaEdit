@@ -6,7 +6,7 @@ import subprocess
 st.set_page_config(page_title="Code Editor", page_icon="💾", layout="wide")
 
 # Title
-st.title("🧠 Streamlit Code Editor")
+st.title("MegaEdit")
 st.write("Write your code below. You can run Python code or save any code.")
 
 # Sidebar settings
@@ -61,7 +61,3 @@ if code:
     )
 else:
     st.info("⏳ Start typing code to enable download.")
-
-# Console placeholder
-st.subheader("🧾 Console (placeholder)")
-st.text_area("Console Output (for future features)", height=200, key="console_output", disabled=True)
